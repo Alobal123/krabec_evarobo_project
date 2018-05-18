@@ -15,6 +15,9 @@ class Robot:
         main_body = self.simulator.send_box(x=0, y=0, z=self.Height+self.EPS,
                              length=self.Height, width=self.Height,
                              height=self.EPS*2.0, mass=1, collision_group='robot')
+        
+        positions_sensor = self.simulator.send_position_sensor(main_body)
+        
         # id arrays
         thighs = [0]*4
         shins = [0]*4
@@ -64,14 +67,13 @@ class Robot:
             foot_sensors[i] = self.simulator.send_touch_sensor(shins[i])
             sensor_neurons[i] = self.simulator.send_sensor_neuron(foot_sensors[i])
     
-        count = 0
         # developing synapses linearly change from the start value to the
         # end value over the course of start time to end time
         # Here we connect each sensor to each motor, pulling weights from
         # the weight matrix
         for source_id in sensor_neurons:
             for target_id in motor_neurons:
-                count += 1
+
                 start_weight = self.weight_matrix[source_id, target_id, 0]
                 end_weight = self.weight_matrix[source_id, target_id, 1]
                 start_time = self.weight_matrix[source_id, target_id, 2]
@@ -81,6 +83,6 @@ class Robot:
                                             end_weight=end_weight,
                                             start_time=start_time, 
                                             end_time=end_time)
-    
+        return positions_sensor
    
 
