@@ -9,11 +9,11 @@ class StairBuilder:
     
     def build(self, number):
         for i in range(number):
-            x = self.beginning_coordinates[0]+i*self.size
+            x = self.beginning_coordinates[0]+i*self.size*3
             y = self.beginning_coordinates[1]
             z = self.beginning_coordinates[2]+(i+1)*self.size/2
-            length = 2
-            width = self.size
+            length = 6
+            width = self.size*3
             height = (i+1)*self.size
             self.simulator.send_box(x=x, y=y, z=z, length=length, width = width, height = height,collision_group='env')
             
