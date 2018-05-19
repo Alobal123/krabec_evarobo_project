@@ -7,16 +7,16 @@ MATRIX_SHAPE = (12,12,4)
 GENOME_LENGTH = 12*12*4
 POPULATION_SIZE = 25
 
-MUTATION_PROBABILITY = 2 / GENOME_LENGTH
-MUTATION_VARIANCE = 0.3
+MUTATION_PROBABILITY = 0.1
+MUTATION_VARIANCE = 0.2
 
-CROSSOVER_PROBABILITY = 0.4
-TOURNAMENT_PROBABILITY = 0.9
+CROSSOVER_PROBABILITY = 0.7
+TOURNAMENT_PROBABILITY = 0.8
 
-def simulate(individual, blind):
-    sim = pyrosim.Simulator(eval_time=500,play_blind=blind, xyz = [-2,0,1], hpr=[0,-27.5,0.0])
+def simulate(individual, blind, time):
+    sim = pyrosim.Simulator(eval_time=time,play_blind=blind, xyz = [-2,0,1], hpr=[0,-27.5,0.0])
     builder = Stairs.StairBuilder(sim,[1,0,0],0.2)
-    builder.build(20)
+    #builder.build(20)
     
     weight_matrix = np.reshape(individual, MATRIX_SHAPE)
     robot = Robot.Robot(sim,weight_matrix)
@@ -25,7 +25,7 @@ def simulate(individual, blind):
     sim.create_collision_matrix('intra')
     sim.start()
     results = sim.wait_to_finish()
-    return sim.get_sensor_data(fitness_sensor, svi=2)[-1]
+    return sim.get_sensor_data(fitness_sensor, svi=0)[-1]
 
 def initializeIndividual():
     individual = np.random.rand(GENOME_LENGTH)
@@ -37,7 +37,7 @@ def initializePopulation():
     return population
 
 def mutate(individual):
-    for i in range(len(individual)):
+    for i in range(GENOME_LENGTH):
         if np.random.rand() < MUTATION_PROBABILITY:
             individual[i] = individual[i] + np.random.normal(0,MUTATION_VARIANCE)
     return individual
@@ -48,10 +48,10 @@ def crossover(parent1, parent2):
         child1 = np.concatenate((parent1[0:index], parent2[index:]))
         child2 = np.concatenate((parent2[0:index], parent1[index:]))
         return [child1, child2]
-    return [parent1, parent2]
+    return [np.copy(parent1), np.copy(parent2)]
  
 def evaluate(population):
-    return [simulate(individual, True) for individual in population]
+    return [simulate(individual, True, 500) for individual in population]
 
 def Tournament(individual1,fitness1, individual2, fitness2):
     better = individual1 if fitness1 > fitness2 else individual2
@@ -60,23 +60,36 @@ def Tournament(individual1,fitness1, individual2, fitness2):
         return better
     return worse
 
+def roulette(population, fitnesses):
+        max     = sum(fitnesses)
+        pick    = np.random.rand() * max
+        current = 0
+        for i in range(POPULATION_SIZE):
+            current += fitnesses[i]
+            if current > pick:
+                return population[i]
+            
 def choose_parent(population, fitnesses):
     i1 = np.random.randint(0,POPULATION_SIZE)
     i2 = np.random.randint(0,POPULATION_SIZE)
     return Tournament(population[i1], fitnesses[i1],population[i2], fitnesses[i2])
+    #return roulette(population, fitnesses)
 
 def evolution_step(population):
+    
     fitnesses = evaluate(population)
     elite_index = int(np.argmax(fitnesses))
     elite = population[elite_index]
+    
     print("Best fitness " + str(fitnesses[elite_index]))
     print("Average fitness " , np.mean(fitnesses))
+    print (str(np.sum(elite)))
+    
     new_population = [elite]
     for i in range(POPULATION_SIZE//2):
         p1 = choose_parent(population, fitnesses)
         p2 = choose_parent(population, fitnesses)
         offsprings = crossover(p1, p2)
-        
         new_population = new_population + offsprings
 
     for i in range(1,POPULATION_SIZE):
@@ -88,10 +101,10 @@ def run_evolution():
     elite = population[0]
     for i in range(500):
         population = evolution_step(population)
-        if i%20 == 0:
-            np.save('episode ' + str(i), population[0])
+        if i%20 == 0 and i>0:
+            np.save('episode_' + str(i), population[0])
+            simulate(population[0], False,1000)
         
-    
 
 if __name__ == "__main__":
     run_evolution()

@@ -15,5 +15,6 @@ class StairBuilder:
             length = 6
             width = self.size*3
             height = (i+1)*self.size
-            self.simulator.send_box(x=x, y=y, z=z, length=length, width = width, height = height,collision_group='env')
+            self.simulator.send_box(x=x, y=y, z=z,mass=1000, length=length,
+                                     width = width, height = height,collision_group='env')
             
