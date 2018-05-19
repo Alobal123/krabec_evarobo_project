@@ -24,7 +24,7 @@ TOURNAMENT_PROBABILITY = 0.8
 def simulate(individual, blind, time):
     sim = pyrosim.Simulator(eval_time=time,play_blind=blind, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
     builder = Stairs.StairBuilder(sim,[0.6,0.6,0],0.2)
-    builder.build(25)
+    #builder.build(25)
     
     #weight_matrix = np.reshape(individual, MATRIX_SHAPE)
     weight_matrix = individual
@@ -113,7 +113,7 @@ def run_evolution(population, start):
         if i%20 == 0 and i>1:
             #np.save('best_' + str(i), population[0])
             np.save('population_'+str(i), population)
-            simulate(population[0], False,1000)
+            #simulate(population[0], False,1000)
         
 
 if __name__ == "__main__":

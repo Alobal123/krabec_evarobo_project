@@ -58,7 +58,7 @@ class Robot:
                                            lo=-math.pi/4.0, hi=math.pi/4.0,
                                            speed=1.0)
             hip_sensors[i] = self.simulator.send_proprioceptive_sensor(hips[i])
-            sensor_neurons[3*i] = self.simulator.send_sensor_neuron(hip_sensors[i])
+            sensor_neurons[SENSORS*i] = self.simulator.send_sensor_neuron(hip_sensors[i])
             motor_neurons[i] = self.simulator.send_motor_neuron(joint_id=hips[i])
     
             x_pos2 = math.cos(theta)*1.5*self.Height
@@ -75,18 +75,18 @@ class Robot:
                                             lo=-math.pi/4.0, hi=math.pi/4.0)
     
             knee_sensors[i] = self.simulator.send_proprioceptive_sensor(knees[i])
-            sensor_neurons[3*i+1] = self.simulator.send_sensor_neuron(knee_sensors[i])
+            sensor_neurons[SENSORS*i+1] = self.simulator.send_sensor_neuron(knee_sensors[i])
             
             motor_neurons[i+4] = self.simulator.send_motor_neuron(knees[i])
             foot_sensors[i] = self.simulator.send_touch_sensor(shins[i])
-            sensor_neurons[3*i+2] = self.simulator.send_sensor_neuron(foot_sensors[i])
+            sensor_neurons[SENSORS*i+2] = self.simulator.send_sensor_neuron(foot_sensors[i])
     
             for j in range(SENSORS):
                 for k in range(HIDDEN):
                     for l in range(MOTORS):
                         index = i * ONELEG + j* HIDDEN*MOTORS + k * MOTORS + l
                         #print (index)
-                        self.simulator.send_synapse(source_neuron_id=sensor_neurons[SENSORS * i],
+                        self.simulator.send_synapse(source_neuron_id=sensor_neurons[SENSORS * i + j],
                                     target_neuron_id=hidden_neurons[i * HIDDEN*MOTORS + MOTORS* k + l],
                                     weight=self.weight_matrix[index])
                     
@@ -99,7 +99,7 @@ class Robot:
                     end_weight = self.weight_matrix[index + 1]
                     start_time = self.weight_matrix[index + 2]
                     end_time = self.weight_matrix[index + 3]
-                    self.simulator.send_developing_synapse(hidden_neurons[HIDDEN * i + j], motor_neurons[MOTORS * i + k],
+                    self.simulator.send_developing_synapse(hidden_neurons[i * HIDDEN*MOTORS + MOTORS* j + k], motor_neurons[MOTORS * i + k],
                                             start_weight=start_weight,
                                             end_weight=end_weight,
                                             start_time=start_time, 
