@@ -4,20 +4,20 @@ import Stairs
 import Robot
 import argparse
 
-MATRIX_SHAPE = (12,12,4)
-GENOME_LENGTH = 12*12*4
+MATRIX_SHAPE = (12,8,4)
+GENOME_LENGTH = 12*8*4
 POPULATION_SIZE = 25
 
 MUTATION_PROBABILITY = 0.1
-MUTATION_VARIANCE = 0.2
+MUTATION_VARIANCE = 0.3
 
-CROSSOVER_PROBABILITY = 0.7
+CROSSOVER_PROBABILITY = 0.5
 TOURNAMENT_PROBABILITY = 0.8
 
 def simulate(individual, blind, time):
-    sim = pyrosim.Simulator(eval_time=time,play_blind=blind, xyz = [-2,0,1], hpr=[0,-27.5,0.0])
+    sim = pyrosim.Simulator(eval_time=time,play_blind=blind, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
     builder = Stairs.StairBuilder(sim,[1,0,0],0.2)
-    #builder.build(20)
+    builder.build(25)
     
     weight_matrix = np.reshape(individual, MATRIX_SHAPE)
     robot = Robot.Robot(sim,weight_matrix)
@@ -26,7 +26,8 @@ def simulate(individual, blind, time):
     sim.create_collision_matrix('intra')
     sim.start()
     results = sim.wait_to_finish()
-    return sim.get_sensor_data(fitness_sensor, svi=0)[-1]
+    #return sim.get_sensor_data(fitness_sensor, svi=1)[-1] + sim.get_sensor_data(fitness_sensor, svi=0)[-1]
+    return sim.get_sensor_data(fitness_sensor, svi=0)[2]
 
 def initializeIndividual():
     individual = np.random.rand(GENOME_LENGTH)
@@ -84,7 +85,6 @@ def evolution_step(population):
     
     print("Best fitness " + str(fitnesses[elite_index]))
     print("Average fitness " + str(np.mean(fitnesses)))
-    print (str(np.sum(elite)))
     
     new_population = [elite]
     for i in range(POPULATION_SIZE//2):
@@ -97,12 +97,12 @@ def evolution_step(population):
         new_population[i] = mutate(new_population[i])
     return new_population
 
-def run_evolution(population):
+def run_evolution(population, start):
     
     elite = population[0]
-    for i in range(500):
+    for i in range(start,200000):
         population = evolution_step(population)
-        if i%20 == 0 and i>0:
+        if i%20 == 0:
             #np.save('best_' + str(i), population[0])
             np.save('population_'+str(i), population)
             simulate(population[0], False,1000)
@@ -114,7 +114,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.genomes:
         population = np.load(args.genomes) 
+        start = int(args.genomes.split('_')[1].split('.')[0])
+        
     else:
         population = initializePopulation()
-    run_evolution(population)
+        start = 0
+    run_evolution(population,start)
    

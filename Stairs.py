@@ -1,4 +1,5 @@
 import pyrosim
+import math
 
 class StairBuilder:
     
@@ -9,12 +10,12 @@ class StairBuilder:
     
     def build(self, number):
         for i in range(number):
-            x = self.beginning_coordinates[0]+i*self.size*3
-            y = self.beginning_coordinates[1]
+            x = self.beginning_coordinates[0]+i*self.size*2
+            y = self.beginning_coordinates[1]+i*self.size*2
             z = self.beginning_coordinates[2]+(i+1)*self.size/2
             length = 6
-            width = self.size*3
-            height = (i+1)*self.size
-            self.simulator.send_box(x=x, y=y, z=z,mass=1000, length=length,
+            height = self.size*2*math.sqrt(2)
+            width = (i+1)*self.size
+            self.simulator.send_box(x=x, y=y, z=z, r1=1, r2=1, r3=0, mass=10000, length=length,
                                      width = width, height = height,collision_group='env')
             
