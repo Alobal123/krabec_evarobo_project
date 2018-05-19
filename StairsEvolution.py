@@ -22,7 +22,7 @@ CROSSOVER_PROBABILITY = 0.5
 TOURNAMENT_PROBABILITY = 0.8
 
 def simulate(individual, blind, time):
-    sim = pyrosim.Simulator(eval_time=time,play_blind=blind, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
+    sim = pyrosim.Simulator(eval_time=time,play_blind=blind,debug=True, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
     builder = Stairs.StairBuilder(sim,[0.6,0.6,0],0.2)
     #builder.build(25)
     

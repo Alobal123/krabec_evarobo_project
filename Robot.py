@@ -59,7 +59,7 @@ class Robot:
                                            speed=1.0)
             hip_sensors[i] = self.simulator.send_proprioceptive_sensor(hips[i])
             sensor_neurons[SENSORS*i] = self.simulator.send_sensor_neuron(hip_sensors[i])
-            motor_neurons[i] = self.simulator.send_motor_neuron(joint_id=hips[i])
+            motor_neurons[MOTORS*i] = self.simulator.send_motor_neuron(joint_id=hips[i])
     
             x_pos2 = math.cos(theta)*1.5*self.Height
             y_pos2 = math.sin(theta)*1.5*self.Height
@@ -77,7 +77,7 @@ class Robot:
             knee_sensors[i] = self.simulator.send_proprioceptive_sensor(knees[i])
             sensor_neurons[SENSORS*i+1] = self.simulator.send_sensor_neuron(knee_sensors[i])
             
-            motor_neurons[i+4] = self.simulator.send_motor_neuron(knees[i])
+            motor_neurons[MOTORS*i+1] = self.simulator.send_motor_neuron(knees[i])
             foot_sensors[i] = self.simulator.send_touch_sensor(shins[i])
             sensor_neurons[SENSORS*i+2] = self.simulator.send_sensor_neuron(foot_sensors[i])
     
