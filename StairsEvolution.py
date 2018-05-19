@@ -4,8 +4,14 @@ import Stairs
 import Robot
 import argparse
 
-MATRIX_SHAPE = (12,8,4)
-GENOME_LENGTH = 12*8*4
+LEGS = Robot.LEGS
+SENSORS = Robot.SENSORS
+HIDDEN = Robot.HIDDEN
+MOTORS = Robot.MOTORS
+
+MATRIX_SHAPE = (LEGS*SENSORS, LEGS*MOTORS, 4)
+GENOME_LENGTH = LEGS * (SENSORS * HIDDEN * MOTORS + HIDDEN * MOTORS * 4)
+#print(GENOME_LENGTH)
 POPULATION_SIZE = 25
 
 MUTATION_PROBABILITY = 0.1
@@ -16,18 +22,19 @@ TOURNAMENT_PROBABILITY = 0.8
 
 def simulate(individual, blind, time):
     sim = pyrosim.Simulator(eval_time=time,play_blind=blind, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
-    builder = Stairs.StairBuilder(sim,[1,0,0],0.2)
+    builder = Stairs.StairBuilder(sim,[0.6,0.6,0],0.2)
     builder.build(25)
     
-    weight_matrix = np.reshape(individual, MATRIX_SHAPE)
+    #weight_matrix = np.reshape(individual, MATRIX_SHAPE)
+    weight_matrix = individual
     robot = Robot.Robot(sim,weight_matrix)
     fitness_sensor = robot.build()
     
     sim.create_collision_matrix('intra')
     sim.start()
     results = sim.wait_to_finish()
-    #return sim.get_sensor_data(fitness_sensor, svi=1)[-1] + sim.get_sensor_data(fitness_sensor, svi=0)[-1]
-    return sim.get_sensor_data(fitness_sensor, svi=0)[2]
+    return sim.get_sensor_data(fitness_sensor, svi=1)[-1] + sim.get_sensor_data(fitness_sensor, svi=0)[-1]
+    #return sim.get_sensor_data(fitness_sensor, svi=0)[2]
 
 def initializeIndividual():
     individual = np.random.rand(GENOME_LENGTH)
@@ -53,7 +60,7 @@ def crossover(parent1, parent2):
     return [np.copy(parent1), np.copy(parent2)]
  
 def evaluate(population):
-    return [simulate(individual, True, 500) for individual in population]
+    return [simulate(individual, True, 200) for individual in population]
 
 def Tournament(individual1,fitness1, individual2, fitness2):
     better = individual1 if fitness1 > fitness2 else individual2
@@ -105,7 +112,7 @@ def run_evolution(population, start):
         if i%20 == 0:
             #np.save('best_' + str(i), population[0])
             np.save('population_'+str(i), population)
-            simulate(population[0], False,1000)
+            #simulate(population[0], False,1000)
         
 
 if __name__ == "__main__":
