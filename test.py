@@ -3,9 +3,9 @@ import argparse
 import StairsEvolution
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--genome", default='.', type=str, help="file with the npy saved genome")
+parser.add_argument("--genomes", type=str, help="file with the npy saved genomes")
 args = parser.parse_args()
 
-genome = np.load(args.genome)
-fitness = StairsEvolution.simulate(genome, False,1000)
+genomes = np.load(args.genomes)
+fitness = StairsEvolution.simulate(genomes[0], False,1000)
 print("Individual with fitness " + str(fitness))

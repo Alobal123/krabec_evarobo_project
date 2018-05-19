@@ -2,6 +2,7 @@ import pyrosim
 import numpy as np
 import Stairs
 import Robot
+import argparse
 
 MATRIX_SHAPE = (12,12,4)
 GENOME_LENGTH = 12*12*4
@@ -82,7 +83,7 @@ def evolution_step(population):
     elite = population[elite_index]
     
     print("Best fitness " + str(fitnesses[elite_index]))
-    print("Average fitness " , np.mean(fitnesses))
+    print("Average fitness " + str(np.mean(fitnesses)))
     print (str(np.sum(elite)))
     
     new_population = [elite]
@@ -96,16 +97,24 @@ def evolution_step(population):
         new_population[i] = mutate(new_population[i])
     return new_population
 
-def run_evolution():
-    population = initializePopulation()
+def run_evolution(population):
+    
     elite = population[0]
     for i in range(500):
         population = evolution_step(population)
         if i%20 == 0 and i>0:
-            np.save('episode_' + str(i), population[0])
+            #np.save('best_' + str(i), population[0])
+            np.save('population_'+str(i), population)
             simulate(population[0], False,1000)
         
 
 if __name__ == "__main__":
-    run_evolution()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--genomes", type=str, help="file with the npy saved genomes")
+    args = parser.parse_args()
+    if args.genomes:
+        population = np.load(args.genomes) 
+    else:
+        population = initializePopulation()
+    run_evolution(population)
    
