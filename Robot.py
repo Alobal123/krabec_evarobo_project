@@ -4,7 +4,7 @@ import pyrosim
 
 LEGS = 4
 SENSORS = 3
-HIDDEN = 2
+HIDDEN = 3
 MOTORS = 2
 FIRST_LAYER = SENSORS * HIDDEN * MOTORS
 ONELEG = (SENSORS * HIDDEN * MOTORS + HIDDEN * MOTORS * 4)
@@ -16,7 +16,7 @@ class Robot:
     
     def __init__(self, simulator, weight_matrix):
         self.simulator = simulator
-        self.weight_matrix = weight_matrix  
+        self.weight_matrix = 2*weight_matrix  
     
     def build(self):
         main_body = self.simulator.send_box(x=0, y=0, z=self.Height+self.EPS,
@@ -87,19 +87,19 @@ class Robot:
                         index = i * ONELEG + j* HIDDEN*MOTORS + k * MOTORS + l
                         #print (index)
                         self.simulator.send_synapse(source_neuron_id=sensor_neurons[SENSORS * i],
-                                    target_neuron_id=hidden_neurons[HIDDEN * i * MOTORS + HIDDEN * k + l],
+                                    target_neuron_id=hidden_neurons[i * HIDDEN*MOTORS + MOTORS* k + l],
                                     weight=self.weight_matrix[index])
                     
             
             for j in range(HIDDEN):
                 for k in range(MOTORS):
-                    index = i * ONELEG + FIRST_LAYER + 4*j*HIDDEN + 4 * k
+                    index = i * ONELEG + FIRST_LAYER + 4*j*MOTORS + 4 * k
                     #print(index)
                     start_weight = self.weight_matrix[ index + 0]
                     end_weight = self.weight_matrix[index + 1]
                     start_time = self.weight_matrix[index + 2]
                     end_time = self.weight_matrix[index + 3]
-                    self.simulator.send_developing_synapse(hidden_neurons[HIDDEN * i + j], motor_neurons[HIDDEN * i + k],
+                    self.simulator.send_developing_synapse(hidden_neurons[HIDDEN * i + j], motor_neurons[MOTORS * i + k],
                                             start_weight=start_weight,
                                             end_weight=end_weight,
                                             start_time=start_time, 
