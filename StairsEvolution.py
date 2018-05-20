@@ -34,6 +34,7 @@ def simulate(individual, blind, time):
     sim.create_collision_matrix('intra')
     sim.start()
     results = sim.wait_to_finish()
+    print(results)
     return min(sim.get_sensor_data(fitness_sensor, svi=1)[-1] , sim.get_sensor_data(fitness_sensor, svi=0)[-1])
     #return sim.get_sensor_data(fitness_sensor, svi=2)[-2]
 
@@ -61,7 +62,7 @@ def crossover(parent1, parent2):
     return [np.copy(parent1), np.copy(parent2)]
  
 def evaluate(population):
-    return [simulate(individual, True, 200) for individual in population]
+    return [simulate(individual, True, 350) for individual in population]
 
 def Tournament(individual1,fitness1, individual2, fitness2):
     better = individual1 if fitness1 > fitness2 else individual2
@@ -110,7 +111,7 @@ def run_evolution(population, start):
     elite = population[0]
     for i in range(start,200000):
         population = evolution_step(population)
-        if i%20 == 0 and i>1:
+        if i%50 == 0 and i>1:
             #np.save('best_' + str(i), population[0])
             np.save('population_'+str(i), population)
             #simulate(population[0], False,1000)

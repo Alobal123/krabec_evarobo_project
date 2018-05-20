@@ -4,7 +4,7 @@ import pyrosim
 
 LEGS = 4
 SENSORS = 3
-HIDDEN = 3
+HIDDEN = 2
 MOTORS = 2
 FIRST_LAYER = SENSORS * HIDDEN * MOTORS
 ONELEG = (SENSORS * HIDDEN * MOTORS + HIDDEN * MOTORS * 4)
@@ -16,7 +16,7 @@ class Robot:
     
     def __init__(self, simulator, weight_matrix):
         self.simulator = simulator
-        self.weight_matrix = 2*weight_matrix  
+        self.weight_matrix = weight_matrix
     
     def build(self):
         main_body = self.simulator.send_box(x=0, y=0, z=self.Height+self.EPS,
@@ -102,8 +102,8 @@ class Robot:
                     self.simulator.send_developing_synapse(hidden_neurons[i * HIDDEN*MOTORS + MOTORS* j + k], motor_neurons[MOTORS * i + k],
                                             start_weight=start_weight,
                                             end_weight=end_weight,
-                                            start_time=start_time, 
-                                            end_time=end_time)
+                                            start_time=max(start_time,0.05), 
+                                            end_time=max(end_time,0))
                     
         # developing synapses linearly change from the start value to the
         # end value over the course of start time to end time
