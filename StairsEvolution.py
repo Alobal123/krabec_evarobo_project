@@ -1,12 +1,14 @@
 import pyrosim
 import numpy as np
 import Stairs
-import Robot
 import argparse
 
+import Robot
+import OriginalRobot
 
-MATRIX_SHAPE = Robot.MATRIX_SHAPE
-GENOME_LENGTH = Robot.GENOME_LENGTH
+ROBOT_TYPE = None
+MATRIX_SHAPE = None
+GENOME_LENGTH = None
 
 POPULATION_SIZE = 25
 
@@ -17,17 +19,16 @@ CROSSOVER_PROBABILITY = 0.5
 TOURNAMENT_PROBABILITY = 0.8
 
 def simulate(individual, blind, time):
-    sim = pyrosim.Simulator(eval_time=time,play_blind=blind,debug=True, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
+    sim = pyrosim.Simulator(eval_time=time,play_blind=blind,debug=False, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
     builder = Stairs.StairBuilder(sim,[0.6,0.6,0],0.2)
     #builder.build(25)
     
-    #weight_matrix = np.reshape(individual, MATRIX_SHAPE)
-    weight_matrix = individual
 
-    
     weight_matrix = np.reshape(individual, MATRIX_SHAPE)
-
-    robot = Robot.Robot(sim,weight_matrix)
+    if ROBOT_TYPE == "Robot":
+        robot = Robot.Robot(sim,weight_matrix)
+    elif ROBOT_TYPE == "OriginalRobot":
+        robot = OriginalRobot.Robot(sim,weight_matrix)
     fitness_sensor = robot.build()
     
     sim.create_collision_matrix('intra')
@@ -115,12 +116,25 @@ def run_evolution(population, start):
             np.save('population_'+str(i), population)
             #simulate(population[0], False,1000)
 
+
+def defineRobot(name):
+    global MATRIX_SHAPE,GENOME_LENGTH, ROBOT_TYPE
+    
+    if name == "Robot":
+        robot = Robot.Robot(None,None)
+    elif name == "OriginalRobot":
+        robot = OriginalRobot.Robot(None,None)
         
+    MATRIX_SHAPE = robot.MATRIX_SHAPE
+    GENOME_LENGTH = robot.GENOME_LENGTH
+    ROBOT_TYPE = name
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--genomes", type=str, help="file with the npy saved genomes")
+    parser.add_argument("--robot", type=str,default="OriginalRobot", help="name of the file defining robot")
     args = parser.parse_args()
+    defineRobot(args.robot)
     if args.genomes:
         population = np.load(args.genomes) 
         start = int(args.genomes.split('_')[1].split('.')[0])
