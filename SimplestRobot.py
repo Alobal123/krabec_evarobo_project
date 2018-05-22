@@ -7,8 +7,8 @@ import pyrosim
 class Robot:
     Height = 0.3
     EPS = 0.05
-    MATRIX_SHAPE = (4,3,2)
-    GENOME_LENGTH = 4*3*2
+    MATRIX_SHAPE = (12,8)
+    GENOME_LENGTH = 12*8
     
     def __init__(self, simulator, weight_matrix):
         self.simulator = simulator
@@ -80,12 +80,10 @@ class Robot:
             # end value over the course of start time to end time
             # Here we connect each sensor to each motor, pulling weights from
             # the weight matrix
-            for source_id in range(3):
-                for target_id in range(2):
-                    source = source_id
-                    target = target_id
-                    weight = self.weight_matrix[i,source, target]
-                    self.simulator.send_synapse(sensor_neurons[source_id], motor_neurons[target_id],weight)
+        for source_id in range(len(sensor_neurons)):
+            for target_id in range(len(motor_neurons)):
+                weight = self.weight_matrix[source_id, target_id]
+                self.simulator.send_synapse(sensor_neurons[source_id], motor_neurons[target_id],weight=weight)
                                                
         positions_sensor = self.simulator.send_position_sensor(main_body)
         return positions_sensor

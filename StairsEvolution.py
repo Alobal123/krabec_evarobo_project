@@ -8,6 +8,8 @@ import OriginalRobot
 import SimpleRobot
 import SimplestRobot
 
+from evostra import EvolutionStrategy
+
 ROBOT_TYPE = None
 MATRIX_SHAPE = None
 GENOME_LENGTH = None
@@ -27,14 +29,13 @@ class Individual:
     def __init__(self, genome):
         self.genome = genome
     def evaluate(self):
-        self.fitness = simulate(self.genome, SIM_TIME)
+        self.fitness = simulate(self.genome,True, SIM_TIME)
 
-def simulate(individual,time):
-    sim = pyrosim.Simulator(eval_time=time,play_blind=True,debug=False, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
+def simulate(individual,blind,time):
+    sim = pyrosim.Simulator(eval_time=time,play_blind=blind,debug=False, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
     builder = Stairs.StairBuilder(sim,[0.6,0.6,0],0.2)
     #builder.build(25)
     
-
     weight_matrix = np.reshape(individual, MATRIX_SHAPE)
     if ROBOT_TYPE == "Robot":
         robot = Robot.Robot(sim,weight_matrix)
@@ -135,6 +136,15 @@ def run_evolution(population, start):
             save(population, i)
             #simulate(population[0], False,1000)
 
+def run_ES():
+    model = initializeIndividual().genome
+    def get_reward(weights):
+        return simulate(weights,True,SIM_TIME)
+    es = EvolutionStrategy(model, get_reward, population_size=30, sigma=0.1, learning_rate=0.03, decay=0.995, num_threads=1)
+    es.run(1000, print_step=50)
+    optimized = es.get_weights()
+    np.save("optimized",[optimized])
+    
 
 def defineRobot(name):
     global MATRIX_SHAPE,GENOME_LENGTH, ROBOT_TYPE
@@ -164,13 +174,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--genomes", type=str, help="file with the npy saved genomes")
     parser.add_argument("--robot", type=str,default="OriginalRobot", help="name of the file defining robot")
+    parser.add_argument("--test", type=bool, default = False)
     args = parser.parse_args()
     defineRobot(args.robot)
     if args.genomes:
         population = load(args.genomes)
-        start = int(args.genomes.split('_')[1].split('.')[0])
+        #start = int(args.genomes.split('_')[1].split('.')[0])
     else:
         population = initializePopulation()
         start = 0
-    run_evolution(population,start)
+    if args.test:
+        print("Fitness: ")
+        print(simulate(population[0].genome, False, SIM_TIME))
+    else:
+        #run_evolution(population,start)
+        run_ES()
    
