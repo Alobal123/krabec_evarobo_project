@@ -5,21 +5,31 @@ import argparse
 
 import Robot
 import OriginalRobot
+import SimpleRobot
 
 ROBOT_TYPE = None
 MATRIX_SHAPE = None
 GENOME_LENGTH = None
 
 POPULATION_SIZE = 25
+ELITISM = 5
 
 MUTATION_PROBABILITY = 0.1
 MUTATION_VARIANCE = 0.3
 
 CROSSOVER_PROBABILITY = 0.5
 TOURNAMENT_PROBABILITY = 0.8
+SIM_TIME = 350
 
-def simulate(individual, blind, time):
-    sim = pyrosim.Simulator(eval_time=time,play_blind=blind,debug=False, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
+class Individual:
+    fitness = -1000
+    def __init__(self, genome):
+        self.genome = genome
+    def evaluate(self):
+        self.fitness = simulate(self.genome, SIM_TIME)
+
+def simulate(individual,time):
+    sim = pyrosim.Simulator(eval_time=time,play_blind=True,debug=False, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
     builder = Stairs.StairBuilder(sim,[0.6,0.6,0],0.2)
     #builder.build(25)
     
@@ -29,6 +39,8 @@ def simulate(individual, blind, time):
         robot = Robot.Robot(sim,weight_matrix)
     elif ROBOT_TYPE == "OriginalRobot":
         robot = OriginalRobot.Robot(sim,weight_matrix)
+    elif ROBOT_TYPE == "SimpleRobot":
+        robot =  SimpleRobot.Robot(sim,weight_matrix)
     fitness_sensor = robot.build()
     
     sim.create_collision_matrix('intra')
@@ -39,40 +51,44 @@ def simulate(individual, blind, time):
     #return sim.get_sensor_data(fitness_sensor, svi=0)[-1]
 
 def initializeIndividual():
-    individual = np.random.rand(GENOME_LENGTH)
-    individual[:] = individual[:]*2.-1.
-    return individual
+    genome = np.random.rand(GENOME_LENGTH)
+    genome[:] = genome[:]*2.-1.
+    return Individual(genome)
     
 def initializePopulation():
     population = [initializeIndividual() for _ in range(POPULATION_SIZE)]
     return population
 
 def mutate(individual):
+    genome = individual.genome
     for i in range(GENOME_LENGTH):
         if np.random.rand() < MUTATION_PROBABILITY:
-            individual[i] = individual[i] + np.random.normal(0,MUTATION_VARIANCE)
+            genome[i] = genome[i] + np.random.normal(0,MUTATION_VARIANCE)
     return individual
 
 def crossover(parent1, parent2):
+    parent1 = parent1.genome
+    parent2 = parent2.genome
     if np.random.rand() < CROSSOVER_PROBABILITY:
         index = np.random.randint(1, GENOME_LENGTH-1)
         child1 = np.concatenate((parent1[0:index], parent2[index:]))
         child2 = np.concatenate((parent2[0:index], parent1[index:]))
-        return [child1, child2]
-    return [np.copy(parent1), np.copy(parent2)]
+        return [Individual(child1), Individual(child2)]
+    return [Individual(np.copy(parent1)), Individual(np.copy(parent2))]
  
 def evaluate(population):
-    return [simulate(individual, True, 350) for individual in population]
+    for individual in population:
+        individual.evaluate() 
 
-def Tournament(individual1,fitness1, individual2, fitness2):
-    better = individual1 if fitness1 > fitness2 else individual2
-    worse = individual1 if fitness1 <= fitness2 else individual2
+def Tournament(individual1, individual2):
+    better = individual1 if individual1.fitness > individual2.fitness else individual2
+    worse = individual1 if individual1.fitness <= individual2.fitness else individual2
     if np.random.rand() < TOURNAMENT_PROBABILITY:
         return better
     return worse
 
-def roulette(population, fitnesses):
-        max     = sum(fitnesses)
+def roulette(population):
+        max     = sum([ind.fitness for ind in population])
         pick    = np.random.rand() * max
         current = 0
         for i in range(POPULATION_SIZE):
@@ -80,29 +96,29 @@ def roulette(population, fitnesses):
             if current > pick:
                 return population[i]
             
-def choose_parent(population, fitnesses):
+def choose_parent(population):
     i1 = np.random.randint(0,POPULATION_SIZE)
     i2 = np.random.randint(0,POPULATION_SIZE)
-    return Tournament(population[i1], fitnesses[i1],population[i2], fitnesses[i2])
+    return Tournament(population[i1],population[i2])
     #return roulette(population, fitnesses)
 
 def evolution_step(population):
     
-    fitnesses = evaluate(population)
-    elite_index = int(np.argmax(fitnesses))
-    elite = population[elite_index]
+    evaluate(population)
+    population.sort(key = lambda x: x.fitness, reverse = True)
+    elite = population[0:ELITISM]
     
-    print("Best fitness " + str(fitnesses[elite_index]))
-    print("Average fitness " + str(np.mean(fitnesses)))
+    print("Best fitness " + str(population[0].fitness))
+    print("Average fitness " + str(np.mean([ind.fitness for ind in population])))
     
-    new_population = [elite]
-    for i in range(POPULATION_SIZE//2):
-        p1 = choose_parent(population, fitnesses)
-        p2 = choose_parent(population, fitnesses)
+    new_population = elite
+    for i in range((POPULATION_SIZE-ELITISM)//2):
+        p1 = choose_parent(population)
+        p2 = choose_parent(population)
         offsprings = crossover(p1, p2)
         new_population = new_population + offsprings
-
-    for i in range(1,POPULATION_SIZE):
+        
+    for i in range(ELITISM,POPULATION_SIZE):
         new_population[i] = mutate(new_population[i])
     return new_population
 
@@ -124,6 +140,8 @@ def defineRobot(name):
         robot = Robot.Robot(None,None)
     elif name == "OriginalRobot":
         robot = OriginalRobot.Robot(None,None)
+    elif name == "SimpleRobot":
+        robot = SimpleRobot.Robot(None,None)
         
     MATRIX_SHAPE = robot.MATRIX_SHAPE
     GENOME_LENGTH = robot.GENOME_LENGTH
