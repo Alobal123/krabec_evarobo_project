@@ -4,15 +4,10 @@ import Stairs
 import Robot
 import argparse
 
-LEGS = Robot.LEGS
-SENSORS = Robot.SENSORS
-HIDDEN = Robot.HIDDEN
-MOTORS = Robot.MOTORS
 
-MATRIX_SHAPE = (LEGS*SENSORS, LEGS*MOTORS, 4)
-#GENOME_LENGTH = LEGS * (SENSORS * HIDDEN * MOTORS + MOTORS*HIDDEN + 4)
-GENOME_LENGTH = LEGS * (SENSORS * HIDDEN * MOTORS + HIDDEN * MOTORS * 4)
-#print(GENOME_LENGTH)
+MATRIX_SHAPE = Robot.MATRIX_SHAPE
+GENOME_LENGTH = Robot.GENOME_LENGTH
+
 POPULATION_SIZE = 25
 
 MUTATION_PROBABILITY = 0.1
@@ -28,15 +23,19 @@ def simulate(individual, blind, time):
     
     #weight_matrix = np.reshape(individual, MATRIX_SHAPE)
     weight_matrix = individual
+
+    
+    weight_matrix = np.reshape(individual, MATRIX_SHAPE)
+
     robot = Robot.Robot(sim,weight_matrix)
     fitness_sensor = robot.build()
     
     sim.create_collision_matrix('intra')
     sim.start()
     results = sim.wait_to_finish()
-    print(results)
-    return min(sim.get_sensor_data(fitness_sensor, svi=1)[-1] , sim.get_sensor_data(fitness_sensor, svi=0)[-1])
-    #return sim.get_sensor_data(fitness_sensor, svi=2)[-2]
+
+    return min(sim.get_sensor_data(fitness_sensor, svi=1)[-1], sim.get_sensor_data(fitness_sensor, svi=0)[-1])
+    #return sim.get_sensor_data(fitness_sensor, svi=0)[-1]
 
 def initializeIndividual():
     individual = np.random.rand(GENOME_LENGTH)
@@ -115,6 +114,7 @@ def run_evolution(population, start):
             #np.save('best_' + str(i), population[0])
             np.save('population_'+str(i), population)
             #simulate(population[0], False,1000)
+
         
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ import numpy as np
 import math
 import pyrosim
 
+
 LEGS = 4
 SENSORS = 3
 HIDDEN = 2
@@ -9,9 +10,14 @@ MOTORS = 2
 FIRST_LAYER = SENSORS * HIDDEN * MOTORS
 ONELEG = (SENSORS * HIDDEN * MOTORS + HIDDEN * MOTORS * 4)
 
+MATRIX_SHAPE = (12,8,4)
+GENOME_LENGTH = 12*8*4
+
+
 class Robot:
     Height = 0.3
     EPS = 0.05
+    
     np.random.seed()
     
     def __init__(self, simulator, weight_matrix):

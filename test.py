@@ -7,5 +7,7 @@ parser.add_argument("--genomes", type=str, help="file with the npy saved genomes
 args = parser.parse_args()
 
 genomes = np.load(args.genomes)
+
 fitness = StairsEvolution.simulate(genomes[0], False,350)
+
 print("Individual with fitness " + str(fitness))
