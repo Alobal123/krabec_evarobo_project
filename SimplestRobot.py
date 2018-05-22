@@ -84,8 +84,8 @@ class Robot:
                 for target_id in range(2):
                     source = source_id
                     target = target_id
-                    weight = self.weight_matrix[i,source, target, 0]
-                    self.simulator.send_synapse(sensor_neurons[source_id], motor_neurons[target_id],weigth)
+                    weight = self.weight_matrix[i,source, target]
+                    self.simulator.send_synapse(sensor_neurons[source_id], motor_neurons[target_id],weight)
                                                
         positions_sensor = self.simulator.send_position_sensor(main_body)
         return positions_sensor

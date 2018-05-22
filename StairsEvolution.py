@@ -6,6 +6,7 @@ import argparse
 import Robot
 import OriginalRobot
 import SimpleRobot
+import SimplestRobot
 
 ROBOT_TYPE = None
 MATRIX_SHAPE = None
@@ -41,6 +42,8 @@ def simulate(individual,time):
         robot = OriginalRobot.Robot(sim,weight_matrix)
     elif ROBOT_TYPE == "SimpleRobot":
         robot =  SimpleRobot.Robot(sim,weight_matrix)
+    elif ROBOT_TYPE == "SimplestRobot":
+        robot =  SimplestRobot.Robot(sim,weight_matrix)
     fitness_sensor = robot.build()
     
     sim.create_collision_matrix('intra')
@@ -127,9 +130,9 @@ def run_evolution(population, start):
     elite = population[0]
     for i in range(start,200000):
         population = evolution_step(population)
-        if i%50 == 0 and i>1:
+        if i%50 == 0:
             #np.save('best_' + str(i), population[0])
-            np.save('population_'+str(i), population)
+            save(population, i)
             #simulate(population[0], False,1000)
 
 
@@ -142,10 +145,20 @@ def defineRobot(name):
         robot = OriginalRobot.Robot(None,None)
     elif name == "SimpleRobot":
         robot = SimpleRobot.Robot(None,None)
+    elif name == "SimplestRobot":
+        robot =  SimplestRobot.Robot(None,None)
         
     MATRIX_SHAPE = robot.MATRIX_SHAPE
     GENOME_LENGTH = robot.GENOME_LENGTH
     ROBOT_TYPE = name
+    
+def save(population,i):
+    population = [ind.genome for ind in population]
+    np.save('population_'+str(i), population)
+
+def load(file):
+    population = [Individual(genome) for genome in np.load(args.genomes)]
+    return population
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -154,9 +167,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     defineRobot(args.robot)
     if args.genomes:
-        population = np.load(args.genomes) 
+        population = load(args.genomes)
         start = int(args.genomes.split('_')[1].split('.')[0])
-        
     else:
         population = initializePopulation()
         start = 0
