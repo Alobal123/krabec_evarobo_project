@@ -2,14 +2,9 @@ from __future__ import print_function
 import numpy as np
 import multiprocessing as mp
 
-
-np.random.seed(0)
-
-
 def worker_process(arg):
     get_reward_func, weights = arg
     return get_reward_func(weights)
-
 
 class EvolutionStrategy(object):
     def __init__(self, weights, get_reward_func, population_size=50, sigma=0.1, learning_rate=0.03, decay=0.998,
@@ -33,7 +28,7 @@ class EvolutionStrategy(object):
     def get_weights(self):
         return self.weights
 
-    def run(self, iterations, print_step=10):
+    def run(self, iterations, print_step=10, start=0):
         pool = mp.Pool(self.num_threads) if self.num_threads > 1 else None
         for iteration in range(iterations):
 
@@ -65,8 +60,8 @@ class EvolutionStrategy(object):
             self.LEARNING_RATE *= self.decay
 
             if (iteration + 1) % print_step == 0:
-                print('iter %d. reward: %f' % (iteration + 1, self.get_reward(self.weights)))
-                np.save("ind" + str(iteration+1), self.weights)
+                print('iter %d. reward: %f' % (start + iteration + 1, self.get_reward(self.weights)))
+                np.save("ind_" + str(start + iteration+1), self.weights)
         if pool is not None:
             pool.close()
             pool.join()

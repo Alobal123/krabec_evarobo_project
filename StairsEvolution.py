@@ -2,6 +2,7 @@ import pyrosim
 import numpy as np
 import Stairs
 import argparse
+import cma
 
 import Robot
 import OriginalRobot
@@ -14,7 +15,7 @@ ROBOT_TYPE = None
 MATRIX_SHAPE = None
 GENOME_LENGTH = None
 
-POPULATION_SIZE = 25
+POPULATION_SIZE = 30
 ELITISM = 5
 
 MUTATION_PROBABILITY = 0.1
@@ -33,8 +34,8 @@ class Individual:
 
 def simulate(individual,blind,time):
     sim = pyrosim.Simulator(eval_time=time,play_blind=blind,debug=False, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
-    builder = Stairs.StairBuilder(sim,[0.6,0.6,0],0.2)
-    #builder.build(25)
+    builder = Stairs.StairBuilder(sim,[0.7,0.7,0],0.2)
+    #builder.build(20)
     
     weight_matrix = np.reshape(individual, MATRIX_SHAPE)
     if ROBOT_TYPE == "Robot":
@@ -136,16 +137,24 @@ def run_evolution(population, start):
             save(population, i)
             #simulate(population[0], False,1000)
 
-def run_ES():
-    model = initializeIndividual().genome
-    def get_reward(weights):
-        return simulate(weights,True,SIM_TIME)
-    es = EvolutionStrategy(model, get_reward, population_size=30, sigma=0.1, learning_rate=0.03, decay=0.995, num_threads=1)
-    es.run(1000, print_step=50)
-    optimized = es.get_weights()
-    np.save("optimized",[optimized])
-    
+def get_reward(weights):
+    return simulate(weights,True,SIM_TIME)
 
+def run_ES(population,i):
+    model = population[0].genome
+
+    es = EvolutionStrategy(model, get_reward, population_size=POPULATION_SIZE, sigma=0.1, learning_rate=0.03, decay=0.996, num_threads=2)
+    es.run(1000, print_step=10, start=i)
+    optimized = es.get_weights()
+    
+def run_CMA(ind):
+    es = cma.CMAEvolutionStrategy(ind.genome, 0.5)
+
+    def fitness(Individual):
+        return -1*simulate(Individual, True, SIM_TIME)
+    es.optimize(fitness)
+    
+    
 def defineRobot(name):
     global MATRIX_SHAPE,GENOME_LENGTH, ROBOT_TYPE
     
@@ -167,7 +176,8 @@ def save(population,i):
     np.save('population_'+str(i), population)
 
 def load(file):
-    population = [Individual(genome) for genome in np.load(args.genomes)]
+    #population = [Individual(genome) for genome in np.load(args.genomes)]
+    population = [Individual(np.load(args.genomes))]
     return population
 
 if __name__ == "__main__":
@@ -179,14 +189,16 @@ if __name__ == "__main__":
     defineRobot(args.robot)
     if args.genomes:
         population = load(args.genomes)
-        #start = int(args.genomes.split('_')[1].split('.')[0])
+        start = int(args.genomes.split('_')[1].split('.')[0])
     else:
         population = initializePopulation()
         start = 0
+        
     if args.test:
         print("Fitness: ")
         print(simulate(population[0].genome, False, SIM_TIME))
     else:
         #run_evolution(population,start)
-        run_ES()
+        #run_ES(population,start)
+        run_CMA(population[0])
    

@@ -4,7 +4,7 @@ import math
 class StairBuilder:
     
 
-    STAIR_HEIGHT = 0.4
+    STAIR_HEIGHT = 0.2
 
     def __init__(self, simulator,beginning_coordinates, size): 
         self.beginning_coordinates = beginning_coordinates
