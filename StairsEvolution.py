@@ -38,7 +38,7 @@ class Individual:
 def simulate(individual,blind,time,height):
     sim = pyrosim.Simulator(eval_time=time,play_blind=blind,debug=False, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
     builder = Stairs.StairBuilder(sim,[0.7,0.7,0],0.2)
-    #builder.build(20,height)
+    builder.build(20,height)
     
     weight_matrix = np.reshape(individual, MATRIX_SHAPE)
     if ROBOT_TYPE == "Robot":
@@ -151,16 +151,30 @@ def run_ES(population,i):
     optimized = es.get_weights()
     
 def run_CMA(ind):
-    es = cma.CMAEvolutionStrategy(ind.genome, 0.5,{'bounds':[-3,3]})
-
+    
     def fitness(Individual):
-        global STAIR_HEIGHT, STEP
-        STEP = STEP + 1
-        if STEP%1000 == 0:
-            STAIR_HEIGHT = STAIR_HEIGHT + 0.02
-            #print(STAIR_HEIGHT)
-        return -1*simulate(Individual, True, SIM_TIME,STAIR_HEIGHT)
-    es.optimize(fitness)
+        return -1*simulate(Individual, True, SIM_TIME, STAIR_HEIGHT)
+    
+    height = 0.01
+    bestind = ind
+    while height <= 0.4:
+        STAIR_HEIGHT = height
+        print("--------------{}----------------".format(STAIR_HEIGHT))
+        es = cma.CMAEvolutionStrategy(bestind, 0.5,{'bounds':[-3,3]})
+        while True:
+            X = es.ask()
+            fit = [fitness(x) for x in X]
+            es.tell(X, fit)
+            best = es.best
+            es.disp()
+            if best.f < -1:
+                bestind = best.x
+                np.save("ind_{}".format(height), bestind)
+                break
+
+            #es.optimize(fitness)
+        height += 0.02
+        
     
     
 def defineRobot(name):
@@ -209,6 +223,6 @@ if __name__ == "__main__":
         print(simulate(population[0].genome, False, SIM_TIME, STAIR_HEIGHT))
     else:
         #run_evolution(population,start)
-        run_ES(population,start)
-        #run_CMA(population[0])
+        #run_ES(population,start)
+        run_CMA(population[0].genome)
    
