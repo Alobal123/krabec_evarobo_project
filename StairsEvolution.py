@@ -7,7 +7,7 @@ import cma
 import Robot
 import OriginalRobot
 import SimpleRobot
-import SimplestRobot
+import DenseRobot
 
 from evostra import EvolutionStrategy
 
@@ -25,17 +25,20 @@ CROSSOVER_PROBABILITY = 0.5
 TOURNAMENT_PROBABILITY = 0.8
 SIM_TIME = 350
 
+STEP = 0
+STAIR_HEIGHT = 0.01
+
 class Individual:
     fitness = -1000
     def __init__(self, genome):
         self.genome = genome
     def evaluate(self):
-        self.fitness = simulate(self.genome,True, SIM_TIME)
+        self.fitness = simulate(self.genome,True, SIM_TIME,STAIR_HEIGHT)
 
-def simulate(individual,blind,time):
+def simulate(individual,blind,time,height):
     sim = pyrosim.Simulator(eval_time=time,play_blind=blind,debug=False, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
     builder = Stairs.StairBuilder(sim,[0.7,0.7,0],0.2)
-    #builder.build(20)
+    #builder.build(20,height)
     
     weight_matrix = np.reshape(individual, MATRIX_SHAPE)
     if ROBOT_TYPE == "Robot":
@@ -44,8 +47,8 @@ def simulate(individual,blind,time):
         robot = OriginalRobot.Robot(sim,weight_matrix)
     elif ROBOT_TYPE == "SimpleRobot":
         robot =  SimpleRobot.Robot(sim,weight_matrix)
-    elif ROBOT_TYPE == "SimplestRobot":
-        robot =  SimplestRobot.Robot(sim,weight_matrix)
+    elif ROBOT_TYPE == "DenseRobot":
+        robot =  DenseRobot.Robot(sim,weight_matrix)
     fitness_sensor = robot.build()
     
     sim.create_collision_matrix('intra')
@@ -138,20 +141,25 @@ def run_evolution(population, start):
             #simulate(population[0], False,1000)
 
 def get_reward(weights):
-    return simulate(weights,True,SIM_TIME)
+    return simulate(weights,True,SIM_TIME,STAIR_HEIGHT)
 
 def run_ES(population,i):
     model = population[0].genome
 
-    es = EvolutionStrategy(model, get_reward, population_size=POPULATION_SIZE, sigma=0.1, learning_rate=0.03, decay=0.996, num_threads=2)
-    es.run(1000, print_step=10, start=i)
+    es = EvolutionStrategy(model, get_reward, population_size=POPULATION_SIZE, sigma=0.1, learning_rate=0.03, decay=0.996, num_threads=1)
+    es.run(5000, print_step=5, start=i)
     optimized = es.get_weights()
     
 def run_CMA(ind):
-    es = cma.CMAEvolutionStrategy(ind.genome, 0.5)
+    es = cma.CMAEvolutionStrategy(ind.genome, 0.5,{'bounds':[-3,3]})
 
     def fitness(Individual):
-        return -1*simulate(Individual, True, SIM_TIME)
+        global STAIR_HEIGHT, STEP
+        STEP = STEP + 1
+        if STEP%1000 == 0:
+            STAIR_HEIGHT = STAIR_HEIGHT + 0.02
+            #print(STAIR_HEIGHT)
+        return -1*simulate(Individual, True, SIM_TIME,STAIR_HEIGHT)
     es.optimize(fitness)
     
     
@@ -164,8 +172,8 @@ def defineRobot(name):
         robot = OriginalRobot.Robot(None,None)
     elif name == "SimpleRobot":
         robot = SimpleRobot.Robot(None,None)
-    elif name == "SimplestRobot":
-        robot =  SimplestRobot.Robot(None,None)
+    elif name == "DenseRobot":
+        robot =  DenseRobot.Robot(None,None)
         
     MATRIX_SHAPE = robot.MATRIX_SHAPE
     GENOME_LENGTH = robot.GENOME_LENGTH
@@ -190,15 +198,17 @@ if __name__ == "__main__":
     if args.genomes:
         population = load(args.genomes)
         start = int(args.genomes.split('_')[1].split('.')[0])
+        STAIR_HEIGHT = STAIR_HEIGHT + (start/1000) * 0.02
     else:
         population = initializePopulation()
         start = 0
         
     if args.test:
         print("Fitness: ")
-        print(simulate(population[0].genome, False, SIM_TIME))
+        print(STAIR_HEIGHT)
+        print(simulate(population[0].genome, False, SIM_TIME, STAIR_HEIGHT))
     else:
         #run_evolution(population,start)
-        #run_ES(population,start)
-        run_CMA(population[0])
+        run_ES(population,start)
+        #run_CMA(population[0])
    

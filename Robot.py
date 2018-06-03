@@ -7,14 +7,14 @@ LEGS = 4
 SENSORS = 3
 HIDDEN = 2
 MOTORS = 2
-FIRST_LAYER = SENSORS * HIDDEN * MOTORS
-ONELEG = (SENSORS * HIDDEN * MOTORS + HIDDEN * MOTORS * 4)
+FIRST_LAYER = SENSORS * (HIDDEN * MOTORS + 1)
+ONELEG = FIRST_LAYER + 3*HIDDEN*MOTORS + HIDDEN * MOTORS * 4
 
 
 class Robot:
     Height = 0.3
     EPS = 0.05
-    GENOME_LENGTH = (SENSORS * HIDDEN * MOTORS + HIDDEN * MOTORS * 4)*4
+    GENOME_LENGTH = ONELEG * 4
     MATRIX_SHAPE = (GENOME_LENGTH)
     
     def __init__(self, simulator, weight_matrix):
@@ -37,9 +37,12 @@ class Robot:
         sensor_neurons = [0]* LEGS * SENSORS
         motor_neurons = [0]* LEGS * MOTORS
         hidden_neurons = []
+        hidden_from_other = [0] * LEGS
+        
         for _ in range(HIDDEN * LEGS * MOTORS):
             hidden_neurons.append(self.simulator.send_hidden_neuron())
-    
+        for _ in range(LEGS):
+            hidden_from_other.append(self.simulator.send_hidden_neuron())    
         delta = float(math.pi)/2.0
             # quadruped is a box with one leg on each side
         # each leg consists thigh and shin cylinders
@@ -107,10 +110,31 @@ class Robot:
                                             end_weight=end_weight,
                                             start_time=max(start_time,0.05), 
                                             end_time=max(end_time,0))
-                    
+        
+        
+        OTHER = self.GENOME_LENGTH - (LEGS*SENSORS + LEGS*(LEGS-1)*HIDDEN*MOTORS)
+        for i in range(LEGS):
+            for j in range(SENSORS):
+                index = OTHER + i * SENSORS + j
+                self.simulator.send_synapse(source_neuron_id=sensor_neurons[SENSORS * i + j],
+                                    target_neuron_id=hidden_from_other[i],
+                                    weight=self.weight_matrix[index])
+        
+        index = 0
+        for i in range(LEGS):
+            for j in range(LEGS):
+                if i!=j:
+                    for k in range(HIDDEN):
+                        for l in range(MOTORS):
+                            self.simulator.send_synapse(source_neuron_id=hidden_from_other[i],
+                                    target_neuron_id=hidden_neurons[j * HIDDEN*MOTORS + MOTORS* k + l],
+                                    weight=self.weight_matrix[index+OTHER+SENSORS*LEGS])
+                            index= index + 1
+                
+                            
         # developing synapses linearly change from the start value to the
         # end value over the course of start time to end time
-        # Here we connect each sensor to each motor, pulling weights from
+        # Here we connect each sensor to each motor, pulling weights fro11m
         # the weight matrix
         
             

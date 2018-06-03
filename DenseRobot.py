@@ -2,13 +2,18 @@ import numpy as np
 import math
 import pyrosim
 
-
+HIDDEN = 12
+SENSORS = 3
+LEGS = 4
+MOTORS = 2
 
 class Robot:
     Height = 0.3
     EPS = 0.05
-    MATRIX_SHAPE = (12,8)
-    GENOME_LENGTH = 12*8
+    
+    GENOME_LENGTH = 12*12+12*8
+    MATRIX_SHAPE = (GENOME_LENGTH)
+
     
     def __init__(self, simulator, weight_matrix):
         self.simulator = simulator
@@ -31,9 +36,14 @@ class Robot:
         knee_sensors = [0]*4
         sensor_neurons = [0]*12
         motor_neurons = [0]*8
-    
+        hidden_neurons = []
+        
+        for i in range(HIDDEN):
+            hidden_neurons.append(self.simulator.send_hidden_neuron())
         delta = float(math.pi)/2.0
-            # quadruped is a box with one leg on each side
+        WeightIndex = 0
+        
+        # quadruped is a box with one leg on each side
         # each leg consists thigh and shin cylinders
         # with hip and knee joints
         # each shin/foot then has a touch sensor
@@ -76,15 +86,19 @@ class Robot:
             foot_sensors[i] = self.simulator.send_touch_sensor(shins[i])
             sensor_neurons[3*i+2] = self.simulator.send_sensor_neuron(foot_sensors[i])
     
-            # developing synapses linearly change from the start value to the
-            # end value over the course of start time to end time
-            # Here we connect each sensor to each motor, pulling weights from
-            # the weight matrix
+    
         for source_id in range(len(sensor_neurons)):
+            for target_id in range(len(hidden_neurons)):
+                weight = self.weight_matrix[WeightIndex]
+                WeightIndex+=1
+                self.simulator.send_synapse(sensor_neurons[source_id], hidden_neurons[target_id],weight=weight)
+                
+        for source_id in range(len(hidden_neurons)):
             for target_id in range(len(motor_neurons)):
-                weight = self.weight_matrix[source_id, target_id]
-                self.simulator.send_synapse(sensor_neurons[source_id], motor_neurons[target_id],weight=weight)
-                                               
+                
+                weight = self.weight_matrix[WeightIndex]
+                WeightIndex+=1
+                self.simulator.send_synapse(hidden_neurons[source_id], motor_neurons[target_id],weight=weight)
         positions_sensor = self.simulator.send_position_sensor(main_body)
         return positions_sensor
    
