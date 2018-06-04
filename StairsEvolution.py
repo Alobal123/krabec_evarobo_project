@@ -23,8 +23,7 @@ MUTATION_VARIANCE = 0.3
 
 CROSSOVER_PROBABILITY = 0.5
 TOURNAMENT_PROBABILITY = 0.8
-SIM_TIME = 350
-
+SIM_TIME = 500
 STEP = 0
 STAIR_HEIGHT = 0.01
 
@@ -36,9 +35,9 @@ class Individual:
         self.fitness = simulate(self.genome,True, SIM_TIME,STAIR_HEIGHT)
 
 def simulate(individual,blind,time,height):
-    sim = pyrosim.Simulator(eval_time=time,play_blind=blind,debug=False, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
+    sim = pyrosim.Simulator(eval_time=time,play_blind=blind,debug= False, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
     builder = Stairs.StairBuilder(sim,[0.7,0.7,0],0.2)
-    builder.build(20,height)
+    #builder.build(20,height)
     
     weight_matrix = np.reshape(individual, MATRIX_SHAPE)
     if ROBOT_TYPE == "Robot":
@@ -157,23 +156,25 @@ def run_CMA(ind):
     
     height = 0.01
     bestind = ind
-    while height <= 0.4:
+    while height <= 0.8:
         STAIR_HEIGHT = height
-        print("--------------{}----------------".format(STAIR_HEIGHT))
-        es = cma.CMAEvolutionStrategy(bestind, 0.5,{'bounds':[-3,3]})
+        print("---------------------------------{}----------------------------".format(STAIR_HEIGHT))
+        es = cma.CMAEvolutionStrategy(bestind, 0.3,{'bounds':[-3,3]})
         while True:
             X = es.ask()
+            X[0] = bestind
             fit = [fitness(x) for x in X]
             es.tell(X, fit)
             best = es.best
+            bestind = best.x
             es.disp()
-            if best.f < -1:
+            if best.f < -2.5:
                 bestind = best.x
                 np.save("ind_{}".format(height), bestind)
                 break
 
             #es.optimize(fitness)
-        height += 0.02
+        height += 0.01
         
     
     
@@ -211,8 +212,8 @@ if __name__ == "__main__":
     defineRobot(args.robot)
     if args.genomes:
         population = load(args.genomes)
-        start = int(args.genomes.split('_')[1].split('.')[0])
-        STAIR_HEIGHT = STAIR_HEIGHT + (start/1000) * 0.02
+        start = float(args.genomes.split('_')[1].split('.')[1])
+        STAIR_HEIGHT = start/100
     else:
         population = initializePopulation()
         start = 0
@@ -220,6 +221,7 @@ if __name__ == "__main__":
     if args.test:
         print("Fitness: ")
         print(STAIR_HEIGHT)
+        print(len(population[0].genome))
         print(simulate(population[0].genome, False, SIM_TIME, STAIR_HEIGHT))
     else:
         #run_evolution(population,start)
