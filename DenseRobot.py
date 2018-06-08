@@ -11,7 +11,7 @@ class Robot:
     Height = 0.3
     EPS = 0.05
     
-    GENOME_LENGTH = 12*12+12*8
+    GENOME_LENGTH = (SENSORS*HIDDEN+HIDDEN*MOTORS)*LEGS
     MATRIX_SHAPE = (GENOME_LENGTH)
 
     
@@ -22,7 +22,7 @@ class Robot:
     def build(self):
         main_body = self.simulator.send_box(x=0, y=0, z=self.Height+self.EPS,
                              length=self.Height, width=self.Height,
-                             height=self.EPS*2.0, mass=1, collision_group='robot')
+                             height=self.EPS*2.0, mass=1, collision_group='robot', b=1,r=0.6,g=0)
         
 
         
@@ -54,7 +54,7 @@ class Robot:
     
             thighs[i] = self.simulator.send_cylinder(x=x_pos, y=y_pos, z=self.Height+self.EPS,
                                           r1=x_pos, r2=y_pos, r3=0,
-                                          length=self.Height, radius=self.EPS, capped=True
+                                          length=self.Height, radius=self.EPS, capped=True, b=1,r=0.6,g=0
                                           )
     
             hips[i] = self.simulator.send_hinge_joint(main_body, thighs[i],
@@ -72,7 +72,7 @@ class Robot:
             shins[i] = self.simulator.send_cylinder(x=x_pos2, y=y_pos2, z=(self.Height+self.EPS)/2.0,
                                          r1=0, r2=0, r3=1,
                                          length=self.Height, radius=self.EPS,
-                                         mass=1., capped=True)
+                                         mass=1., capped=True, b=1,r=0.6,g=0)
     
             knees[i] = self.simulator.send_hinge_joint(thighs[i], shins[i],
                                             x=x_pos2, y=y_pos2, z=self.Height+self.EPS,
@@ -100,6 +100,6 @@ class Robot:
                 WeightIndex+=1
                 self.simulator.send_synapse(hidden_neurons[source_id], motor_neurons[target_id],weight=weight)
         positions_sensor = self.simulator.send_position_sensor(main_body)
-        return positions_sensor
+        return positions_sensor, main_body
    
 

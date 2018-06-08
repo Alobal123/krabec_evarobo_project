@@ -35,9 +35,9 @@ class Individual:
         self.fitness = simulate(self.genome,True, SIM_TIME,STAIR_HEIGHT)
 
 def simulate(individual,blind,time,height):
-    sim = pyrosim.Simulator(eval_time=time,play_blind=blind,debug= False, xyz = [-1,-1,1], hpr=[45,-27.5,0.0])
+    sim = pyrosim.Simulator(eval_time=time,play_blind=blind,debug= False, xyz = [-1.2,-1.2,1.2], hpr=[50,-35,0.0], use_textures=True)
     builder = Stairs.StairBuilder(sim,[0.7,0.7,0],0.2)
-    #builder.build(20,height)
+    builder.build(20,height)
     
     weight_matrix = np.reshape(individual, MATRIX_SHAPE)
     if ROBOT_TYPE == "Robot":
@@ -48,14 +48,15 @@ def simulate(individual,blind,time,height):
         robot =  SimpleRobot.Robot(sim,weight_matrix)
     elif ROBOT_TYPE == "DenseRobot":
         robot =  DenseRobot.Robot(sim,weight_matrix)
-    fitness_sensor = robot.build()
-    
+    fitness_sensor,body = robot.build()
+    if not blind:
+        sim.film_body(body)
     sim.create_collision_matrix('intra')
     sim.start()
     results = sim.wait_to_finish()
 
     return min(sim.get_sensor_data(fitness_sensor, svi=1)[-1], sim.get_sensor_data(fitness_sensor, svi=0)[-1])
-    #return sim.get_sensor_data(fitness_sensor, svi=0)[-1]
+    #return sim.get_sensor_data(fitness_sensor, svi=2)[-1]
 
 def initializeIndividual():
     genome = np.random.rand(GENOME_LENGTH)
@@ -145,21 +146,19 @@ def get_reward(weights):
 def run_ES(population,i):
     model = population[0].genome
 
-    es = EvolutionStrategy(model, get_reward, population_size=POPULATION_SIZE, sigma=0.1, learning_rate=0.03, decay=0.996, num_threads=1)
+    es = EvolutionStrategy(model, get_reward, population_size=POPULATION_SIZE, sigma=0.25, learning_rate=0.03, decay=0.998, num_threads=2)
     es.run(5000, print_step=5, start=i)
     optimized = es.get_weights()
     
 def run_CMA(ind):
-    
+    global STAIR_HEIGHT
     def fitness(Individual):
         return -1*simulate(Individual, True, SIM_TIME, STAIR_HEIGHT)
     
-    height = 0.01
     bestind = ind
-    while height <= 0.8:
-        STAIR_HEIGHT = height
+    while STAIR_HEIGHT <= 10:
         print("---------------------------------{}----------------------------".format(STAIR_HEIGHT))
-        es = cma.CMAEvolutionStrategy(bestind, 0.3,{'bounds':[-3,3]})
+        es = cma.CMAEvolutionStrategy(bestind, 0.35,{'bounds':[-3,3]})
         while True:
             X = es.ask()
             X[0] = bestind
@@ -168,14 +167,37 @@ def run_CMA(ind):
             best = es.best
             bestind = best.x
             es.disp()
-            if best.f < -2.5:
-                bestind = best.x
-                np.save("ind_{}".format(height), bestind)
-                break
+            if best.f < -2:
+                if best.f > -3:
+                    np.save("ind_{:.2f}".format(STAIR_HEIGHT), bestind)
+                    break
+                else:
+                    bestind = X[0]
 
-            #es.optimize(fitness)
-        height += 0.01
+            if es.sigma < 0.01:
+                STAIR_HEIGHT -= 0.01
+                bestind = X[-1]
+                break
+        STAIR_HEIGHT += 0.01
         
+        
+def finetune_CMA(ind, time):
+    def fitness(Individual):
+        return -1*simulate(Individual, True, SIM_TIME + time, STAIR_HEIGHT)
+    bestind = ind
+    print(STAIR_HEIGHT)
+    print(simulate(bestind, True, SIM_TIME, STAIR_HEIGHT))
+    es = cma.CMAEvolutionStrategy(bestind, 0.2,{'bounds':[-3,3]})
+    while True:
+        X = es.ask()
+        X[0] = bestind
+        fit = [fitness(x) for x in X]
+        es.tell(X, fit)
+        best = es.best
+        es.disp()
+        if best.f > -10:
+             bestind = best.x
+             np.save("indtuned_{:.2f}".format(STAIR_HEIGHT), bestind)    
     
     
 def defineRobot(name):
@@ -208,23 +230,30 @@ if __name__ == "__main__":
     parser.add_argument("--genomes", type=str, help="file with the npy saved genomes")
     parser.add_argument("--robot", type=str,default="OriginalRobot", help="name of the file defining robot")
     parser.add_argument("--test", type=bool, default = False)
+    parser.add_argument("--finetune", type=int, default = 0)
     args = parser.parse_args()
     defineRobot(args.robot)
     if args.genomes:
         population = load(args.genomes)
-        start = float(args.genomes.split('_')[1].split('.')[1])
-        STAIR_HEIGHT = start/100
+        start = args.genomes.split('/')[-1].split('_')[1].split('.')[1]
+        if start == "npy":
+            start = args.genomes.split('/')[-1].split('_')[1].split('.')[0]
+        start = float(start)
+        
+        STAIR_HEIGHT = 1 + start/100
     else:
         population = initializePopulation()
         start = 0
         
     if args.test:
         print("Fitness: ")
-        print(STAIR_HEIGHT)
-        print(len(population[0].genome))
-        print(simulate(population[0].genome, False, SIM_TIME, STAIR_HEIGHT))
+        #print(STAIR_HEIGHT)
+        print(simulate(population[0].genome, False, SIM_TIME+args.finetune, STAIR_HEIGHT))
+    elif args.finetune:
+        finetune_CMA(population[0].genome, args.finetune)
     else:
         #run_evolution(population,start)
         #run_ES(population,start)
         run_CMA(population[0].genome)
+        
    

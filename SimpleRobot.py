@@ -111,6 +111,6 @@ class Robot:
         
         
         positions_sensor = self.simulator.send_position_sensor(main_body)
-        return positions_sensor
+        return positions_sensor, main_body
    
 
